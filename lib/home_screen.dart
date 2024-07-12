@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:painter_app/components/line.dart';
 import 'package:painter_app/pop_up_button.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
 
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+  @override
+  State<StatefulWidget> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Line? currentLine;
+  List<Line> currentLines = [];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,11 +73,34 @@ class HomeScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.red, width: 3.0), // Add a border to visualize dimensions
                     ),
-                    child: CustomPaint(
-                      painter: DrawingPainter(),
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width,
-                        height: MediaQuery.of(context).size.height - 100,
+                    child: GestureDetector(
+                      onPanStart: (details){
+                        setState(() {
+                          currentLine = Line(
+                              color: Colors.black,
+                              points: [details.localPosition]
+                          );
+                          currentLines.add(currentLine!);
+                        });
+                      },
+                      onPanUpdate: (details){
+                        setState(() {
+                          if(currentLine == null){
+                            return;
+                          }
+                          currentLine?.points.add(details.localPosition);
+                          currentLines.last = currentLine!;
+                        });
+                      },
+                      onPanEnd: (_){
+                        currentLine = null;
+                      },
+                      child: CustomPaint(
+                        painter: DrawingPainter(currentLines),
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          height: MediaQuery.of(context).size.height - 100,
+                        ),
                       ),
                     ),
                   ),
@@ -79,12 +111,30 @@ class HomeScreen extends StatelessWidget {
         )
     );
   }
+
 }
 
 class DrawingPainter extends CustomPainter {
-
+  late List<Line> linesToDraw;
+  DrawingPainter(List<Line> lines){
+    if(lines == null){
+      linesToDraw = [];
+    }else {
+      linesToDraw = lines;
+    }
+  }
   @override
   void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    for(var line in linesToDraw){
+      paint.color = line.color;
+      paint.strokeWidth = 1.0;
+      for(var i = 0; i < line.points.length - 1; i++){
+        final currentPoint = line.points[i];
+        final nextPoint = line.points[i+1];
+        canvas.drawLine(currentPoint, nextPoint, paint);
+      }
+    }
 
   }
 
