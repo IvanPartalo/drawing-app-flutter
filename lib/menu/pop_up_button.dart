@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:painter_app/thickness_menu.dart';
+import 'package:painter_app/menu/thickness_menu.dart';
 import 'package:popover/popover.dart';
 
 class PopUpButton extends StatelessWidget{
@@ -18,5 +18,4 @@ class PopUpButton extends StatelessWidget{
       ),
     );
   }
-
 }

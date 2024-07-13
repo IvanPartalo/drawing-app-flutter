@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:painter_app/components/line.dart';
-import 'package:painter_app/pop_up_button.dart';
+import 'package:painter_app/menu/pop_up_button.dart';
+import 'package:painter_app/menu/pop_up_color.dart';
 
-
+typedef ColorCallback = void Function(Color color);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +14,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Line? currentLine;
   List<Line> currentLines = [];
+  Color selectedColor = Colors.red;
+
+  void _updateColor(Color color) {
+    setState(() {
+      selectedColor = color;
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,19 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.redo)
                 ),
                 const PopUpButton(),
-                Container(
-                  margin: EdgeInsets.fromLTRB(12.0, 0.0, 12.0, 0.0),
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  foregroundDecoration: BoxDecoration(
-                    border: Border.all(color: Colors.black, width: 2),
-                    shape: BoxShape.circle,
-                  ),
-                ),
+                PopUpColor(selectedColor: selectedColor, onColorSelected: _updateColor,),
                 SizedBox(
                   height: 40,
 
@@ -77,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPanStart: (details){
                         setState(() {
                           currentLine = Line(
-                              color: Colors.black,
+                              color: selectedColor,
                               points: [details.localPosition]
                           );
                           currentLines.add(currentLine!);
