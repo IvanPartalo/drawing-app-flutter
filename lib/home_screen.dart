@@ -15,6 +15,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Line? currentLine;
   List<Line> currentLines = [];
+  List<Line> undoLines = [];
   Color selectedColor = Colors.red;
   double selectedThickness = 1.0;
 
@@ -44,18 +45,27 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    if(undoLines.length < 21) {
+                      undoLines.add(currentLines.last);
+                      currentLines.removeLast();
+                    }
+                  },
                   icon: const Icon(Icons.undo)
                 ),
                 IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      if(undoLines.isNotEmpty) {
+                        currentLines.add(undoLines.last);
+                        undoLines.removeLast();
+                      }
+                    },
                     icon: const Icon(Icons.redo)
                 ),
                 PopUpButton(thickness: selectedThickness, onThicknessChanged: _updateThickness,),
                 PopUpColor(selectedColor: selectedColor, onColorSelected: _updateColor,),
                 SizedBox(
                   height: 40,
-
                   //icon link: https://www.flaticon.com/free-icon/eraser_9515002?term=erase&page=1&position=10&origin=tag&related_id=9515002
                   child: Image.asset('lib/icons/eraser.png'),
                 ),
@@ -85,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               points: [details.localPosition]
                           );
                           currentLines.add(currentLine!);
+                          undoLines.clear();
                         });
                       },
                       onPanUpdate: (details){
