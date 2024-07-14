@@ -4,6 +4,7 @@ import 'package:painter_app/menu/pop_up_button.dart';
 import 'package:painter_app/menu/pop_up_color.dart';
 
 typedef ColorCallback = void Function(Color color);
+typedef ThicknessCallback = void Function(double thickness);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,10 +16,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Line? currentLine;
   List<Line> currentLines = [];
   Color selectedColor = Colors.red;
+  double selectedThickness = 1.0;
 
   void _updateColor(Color color) {
     setState(() {
       selectedColor = color;
+    });
+  }
+  void _updateThickness(double thickness) {
+    setState(() {
+      selectedThickness = thickness;
     });
   }
   @override
@@ -44,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () {},
                     icon: const Icon(Icons.redo)
                 ),
-                const PopUpButton(),
+                PopUpButton(thickness: selectedThickness, onThicknessChanged: _updateThickness,),
                 PopUpColor(selectedColor: selectedColor, onColorSelected: _updateColor,),
                 SizedBox(
                   height: 40,
@@ -74,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         setState(() {
                           currentLine = Line(
                               color: selectedColor,
+                              thickness: selectedThickness,
                               points: [details.localPosition]
                           );
                           currentLines.add(currentLine!);
@@ -124,7 +132,7 @@ class DrawingPainter extends CustomPainter {
     final paint = Paint();
     for(var line in linesToDraw){
       paint.color = line.color;
-      paint.strokeWidth = 1.0;
+      paint.strokeWidth = line.thickness;
       for(var i = 0; i < line.points.length - 1; i++){
         final currentPoint = line.points[i];
         final nextPoint = line.points[i+1];
