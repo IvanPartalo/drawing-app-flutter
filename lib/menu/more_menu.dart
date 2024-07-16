@@ -6,7 +6,9 @@ class MoreMenu extends StatelessWidget{
   final DeleteAllCallback onDeleteAll;
   final SetLandscapeCallback onSetLandscape;
   final SetPortraitCallback onSetPortrait;
-  const MoreMenu({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait});
+  final SaveImageCallback onSaveImage;
+  const MoreMenu({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait,
+  required this.onSaveImage});
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -108,6 +110,16 @@ class MoreMenu extends StatelessWidget{
                   );
                 },
                 icon: const Icon(Icons.delete)
+            ),
+          ],
+        ),
+        Row(
+          children: <Widget>[
+            IconButton(
+                onPressed: (){
+                  onSaveImage();
+                },
+                icon: const Icon(Icons.save)
             ),
           ],
         ),

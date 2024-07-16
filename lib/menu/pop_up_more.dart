@@ -8,7 +8,9 @@ class PopUpMore extends StatelessWidget{
   final DeleteAllCallback onDeleteAll;
   final SetLandscapeCallback onSetLandscape;
   final SetPortraitCallback onSetPortrait;
-  const PopUpMore({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait});
+  final SaveImageCallback onSaveImage;
+  const PopUpMore({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait,
+  required this.onSaveImage});
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +30,13 @@ class PopUpMore extends StatelessWidget{
                   onSetPortrait();
                   Navigator.pop(context);
                 },
+                onSaveImage: (){
+                  onSaveImage();
+                  Navigator.pop(context);
+                },
               ),
                 width: 150,
-                height: 90,);
+                height: 100,);
             },
             icon: const Icon(Icons.more_vert)
         ),
