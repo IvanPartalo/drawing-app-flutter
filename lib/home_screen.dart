@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:painter_app/components/line.dart';
 import 'package:painter_app/menu/pop_up_button.dart';
 import 'package:painter_app/menu/pop_up_color.dart';
+import 'package:painter_app/menu/pop_up_more.dart';
 
 typedef ColorCallback = void Function(Color color);
 typedef ThicknessCallback = void Function(double thickness);
+typedef DeleteAllCallback = void Function();
+typedef SetLandscapeCallback = void Function();
+typedef SetPortraitCallback = void Function();
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +33,25 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       selectedThickness = thickness;
     });
+  }
+  void _deleteAll() {
+    setState(() {
+      currentLines = [];
+      undoLines = [];
+    });
+  }
+  void _setLandscapeMode() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    _deleteAll();
+  }
+  void _setPortraitMode() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+    _deleteAll();
   }
   @override
   Widget build(BuildContext context) {
@@ -73,49 +97,41 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () {},
                     icon: const Icon(Icons.text_format)
                 ),
-                IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.more_vert_sharp)
-                ),
+                PopUpMore(onDeleteAll: _deleteAll, onSetLandscape: _setLandscapeMode, onSetPortrait: _setPortraitMode,),
               ],
             ),
             Row(
               children: <Widget>[
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.red, width: 3.0), // Add a border to visualize dimensions
-                    ),
-                    child: GestureDetector(
-                      onPanStart: (details){
-                        setState(() {
-                          currentLine = Line(
-                              color: selectedColor,
-                              thickness: selectedThickness,
-                              points: [details.localPosition]
-                          );
-                          currentLines.add(currentLine!);
-                          undoLines.clear();
-                        });
-                      },
-                      onPanUpdate: (details){
-                        setState(() {
-                          if(currentLine == null){
-                            return;
-                          }
-                          currentLine?.points.add(details.localPosition);
-                          currentLines.last = currentLine!;
-                        });
-                      },
-                      onPanEnd: (_){
-                        currentLine = null;
-                      },
-                      child: CustomPaint(
-                        painter: DrawingPainter(currentLines),
-                        child: SizedBox(
-                          width: MediaQuery.of(context).size.width,
-                          height: MediaQuery.of(context).size.height - 100,
-                        ),
+                  child: GestureDetector(
+                    onPanStart: (details){
+                      setState(() {
+                        currentLine = Line(
+                            color: selectedColor,
+                            thickness: selectedThickness,
+                            points: [details.localPosition]
+                        );
+                        currentLines.add(currentLine!);
+                        undoLines.clear();
+                      });
+                    },
+                    onPanUpdate: (details){
+                      setState(() {
+                        if(currentLine == null){
+                          return;
+                        }
+                        currentLine?.points.add(details.localPosition);
+                        currentLines.last = currentLine!;
+                      });
+                    },
+                    onPanEnd: (_){
+                      currentLine = null;
+                    },
+                    child: CustomPaint(
+                      painter: DrawingPainter(currentLines),
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.width,
+                        height: MediaQuery.of(context).size.height - 100,
                       ),
                     ),
                   ),
