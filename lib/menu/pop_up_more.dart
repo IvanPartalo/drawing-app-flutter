@@ -36,7 +36,7 @@ class PopUpMore extends StatelessWidget{
                 },
               ),
                 width: 150,
-                height: 100,);
+                height: 200,);
             },
             icon: const Icon(Icons.more_vert)
         ),

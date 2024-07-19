@@ -12,116 +12,113 @@ class MoreMenu extends StatelessWidget{
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            IconButton(
-                onPressed: () {
-                  if(MediaQuery.of(context).orientation == Orientation.landscape) {
-                    Widget cancelButton = ElevatedButton(
-                      child: Text("No"),
-                      onPressed:  () {
-                        Navigator.pop(context);
-                        Navigator.pop(context);
-                      },
-                    );
-                    Widget continueButton = ElevatedButton(
-                      child: Text("Yes"),
-                      onPressed:  () {
-                        onSetPortrait();
-                        Navigator.pop(context);
-                      },
-                    );
-                    AlertDialog alert = AlertDialog(
-                      title: Text("Changing of orientation"),
-                      content: Text("Are you sure you want to switch to portrait? It will delete the current drawing."),
-                      actions: [cancelButton, continueButton, ],
-                    );
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return alert;
-                      },
-                    );
-                  }
+      children: <Widget>[
+        ElevatedButton.icon(
+          icon: const Icon(Icons.crop_portrait),
+          onPressed: () {
+            if(MediaQuery.of(context).orientation == Orientation.landscape) {
+              Widget cancelButton = ElevatedButton(
+                child: Text("No"),
+                onPressed:  () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
                 },
-                icon: const Icon(Icons.crop_portrait)
-            ),
-            IconButton(
-                onPressed: () {
-                  if(MediaQuery.of(context).orientation == Orientation.portrait) {
-                    Widget cancelButton = ElevatedButton(
-                      child: Text("No"),
-                      onPressed:  () {
-                        Navigator.pop(context);
-                        Navigator.pop(context);
-                      },
-                    );
-                    Widget continueButton = ElevatedButton(
-                      child: Text("Yes"),
-                      onPressed:  () {
-                        onSetLandscape();
-                        Navigator.pop(context);
-                      },
-                    );
-                    AlertDialog alert = AlertDialog(
-                      title: Text("Changing of orientation"),
-                      content: Text("Are you sure you want to switch to landscape? It will delete the current drawing."),
-                      actions: [cancelButton, continueButton, ],
-                    );
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return alert;
-                      },
-                    );
-                  }
+              );
+              Widget continueButton = ElevatedButton(
+                child: Text("Yes"),
+                onPressed:  () {
+                  onSetPortrait();
+                  Navigator.pop(context);
                 },
-                icon: const Icon(Icons.crop_landscape)
-            ),
-            IconButton(
-                onPressed: () {
-                  Widget cancelButton = ElevatedButton(
-                    child: Text("No"),
-                    onPressed:  () {
-                      //jednom za izbacivanje alert-a, jednom za meni
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    },
-                  );
-                  Widget continueButton = ElevatedButton(
-                    child: Text("Yes"),
-                    onPressed:  () {
-                      onDeleteAll();
-                      Navigator.pop(context);
-                    },
-                  );
-                  AlertDialog alert = AlertDialog(
-                    title: Text("Delete drawing"),
-                    content: Text("Are you sure you want to delete this drawing?"),
-                    actions: [cancelButton, continueButton, ],
-                  );
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return alert;
-                    },
-                  );
+              );
+              AlertDialog alert = AlertDialog(
+                title: Text("Changing of orientation"),
+                content: Text("Are you sure you want to switch to portrait? It will delete the current drawing."),
+                actions: [cancelButton, continueButton, ],
+              );
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return alert;
                 },
-                icon: const Icon(Icons.delete)
-            ),
-          ],
+              );
+            }
+          },
+          style: ElevatedButton.styleFrom(minimumSize: Size(145, 35)),
+          label: Text("Portrait"),
         ),
-        Row(
-          children: <Widget>[
-            IconButton(
-                onPressed: (){
-                  onSaveImage();
-                },
-                icon: const Icon(Icons.save)
-            ),
-          ],
+        ElevatedButton.icon(
+          icon: const Icon(Icons.crop_landscape),
+          onPressed: () {
+            if(MediaQuery.of(context).orientation == Orientation.portrait) {
+              Widget cancelButton = ElevatedButton(
+              child: Text("No"),
+              onPressed:  () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+              },
+              );
+              Widget continueButton = ElevatedButton(
+              child: Text("Yes"),
+              onPressed:  () {
+              onSetLandscape();
+              Navigator.pop(context);
+            },
+            );
+            AlertDialog alert = AlertDialog(
+              title: Text("Changing of orientation"),
+              content: Text("Are you sure you want to switch to portrait? It will delete the current drawing."),
+              actions: [cancelButton, continueButton, ],
+            );
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return alert;
+              },
+            );
+            }
+          },
+          label: Text("Landscape"),
+        ),
+        ElevatedButton.icon(
+        icon: const Icon(Icons.delete),
+        onPressed: () {
+          Widget cancelButton = ElevatedButton(
+            child: Text("No"),
+            onPressed:  () {
+              //jednom za izbacivanje alert-a, jednom za meni
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+          );
+          Widget continueButton = ElevatedButton(
+            child: Text("Yes"),
+            onPressed:  () {
+              onDeleteAll();
+              Navigator.pop(context);
+            },
+          );
+          AlertDialog alert = AlertDialog(
+            title: Text("Delete drawing"),
+            content: Text("Are you sure you want to delete this drawing?"),
+            actions: [cancelButton, continueButton, ],
+          );
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return alert;
+            },
+          );
+        },
+        label: Text("Delete drawing"),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.save_alt),
+          onPressed: () {
+            onSaveImage();
+          },
+          label: Text("Save drawing"),
+
         ),
       ],
     );

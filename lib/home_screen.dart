@@ -153,7 +153,13 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
       Canvas canvas = Canvas(pictureRecorder);
-      DrawingPainter painter = DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded);
+      DrawingPainter painter;
+      if(_image != null){
+        painter = DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded);
+      }
+      else{
+        painter = DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded);
+      }
       Size? size = context.size;
       //moram da obojim pozadinu u belo rucno :(
       Paint paint = Paint();
