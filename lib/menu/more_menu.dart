@@ -81,6 +81,14 @@ class MoreMenu extends StatelessWidget{
           label: Text("Landscape"),
         ),
         ElevatedButton.icon(
+          icon: const Icon(Icons.save_alt),
+          onPressed: () {
+            onSaveImage();
+          },
+          label: Text("Save drawing"),
+
+        ),
+        ElevatedButton.icon(
         icon: const Icon(Icons.delete),
         onPressed: () {
           Widget cancelButton = ElevatedButton(
@@ -111,14 +119,6 @@ class MoreMenu extends StatelessWidget{
           );
         },
         label: Text("Delete drawing"),
-        ),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.save_alt),
-          onPressed: () {
-            onSaveImage();
-          },
-          label: Text("Save drawing"),
-
         ),
       ],
     );

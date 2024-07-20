@@ -19,9 +19,10 @@ class PopUpColor extends StatelessWidget{
           onColorSelected(color);
           Navigator.pop(context); // Close the popover
         },
+        selectedColor: selectedColor,
       ),
       width: 240,
-      height: 90,
+      height: 100,
     );
   }
 

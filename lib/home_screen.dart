@@ -320,6 +320,11 @@ class DrawingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
     painterCanvasSize = size;
+    //deo za bojenje pozadine moze biti problem ako stalno iterativno crta pa da usporava
+    Path mainBackground = Path();
+    mainBackground.addRect(Rect.fromLTRB(0, 0, size.width, size.height));
+    paint.color = Colors.white;
+    canvas.drawPath(mainBackground, paint);
     if(backgroundChosen && imageLoaded){
       double scale = getScaleFactor(backgroundImage, size);
       double dx = (size.width - backgroundImage.width.toDouble() * scale ) / 2;
