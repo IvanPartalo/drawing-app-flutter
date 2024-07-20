@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ui.Image? placeHolderImage;
   bool backgroundChosen = false;
   bool imageLoaded = false;
+  bool isPortrait = true;
   final picker = ImagePicker();
 
   @override
@@ -141,16 +142,19 @@ class _HomeScreenState extends State<HomeScreen> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+    setState(() { isPortrait = false; });
     _deleteAll();
   }
   void _setPortraitMode() {
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
     ]);
+    setState(() { isPortrait = true; });
     _deleteAll();
   }
   void _saveAsImage() async{
     try {
+      double scaleFactor = 1.5;
       ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
       Canvas canvas = Canvas(pictureRecorder);
       DrawingPainter painter;
@@ -160,15 +164,15 @@ class _HomeScreenState extends State<HomeScreen> {
       else{
         painter = DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded);
       }
-      Size? size = context.size;
+      Size? size = isPortrait ? const Size(360, 661.3) : const Size(731.3, 260);
       //moram da obojim pozadinu u belo rucno :(
       Paint paint = Paint();
       paint.color = Colors.white;
+      canvas.scale(scaleFactor);
       canvas.drawRect(Rect.fromLTWH(0, 0, size!.width, size.height), paint);
-
       painter.paint(canvas, size);
       ui.Image image = await pictureRecorder.endRecording().toImage(
-          size.width.floor(), size.height.floor());
+          (size.width * scaleFactor).floor(), (size.height * scaleFactor).floor());
       var pngBytes = await image.toByteData(format: ui.ImageByteFormat.png);
       final Directory tempDir = await getTemporaryDirectory();
       var generator = RandomStringGenerator(fixedLength: 10, hasSymbols: false);
@@ -179,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await GallerySaver.saveImage(file.path);
       toastification.show(
         context: context,
-        title: const Text("Drawing successfully saved"),
+        title: const Text("Saving the drawing"),
         autoCloseDuration: const Duration(seconds: 2),
         alignment: Alignment.bottomCenter,
       );
@@ -234,6 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 IconButton(
                     onPressed: () {
                       showOptions();
+
                     },
                     icon: const Icon(Icons.upload_sharp)
                 ),
@@ -294,6 +299,7 @@ class DrawingPainter extends CustomPainter {
   late ui.Image backgroundImage;
   bool backgroundChosen = false;
   bool imageLoaded = false;
+  late Size painterCanvasSize;
   DrawingPainter(List<Line> lines, ui.Image i, this.backgroundChosen, this.imageLoaded){
     if(lines == null){
       linesToDraw = [];
@@ -313,6 +319,7 @@ class DrawingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
+    painterCanvasSize = size;
     if(backgroundChosen && imageLoaded){
       double scale = getScaleFactor(backgroundImage, size);
       double dx = (size.width - backgroundImage.width.toDouble() * scale ) / 2;
@@ -336,6 +343,7 @@ class DrawingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    //mozda bih mogao promeniti kada se ponovo crta kako bih optimizovao aplikaciju
     return true;
   }
 
@@ -344,6 +352,10 @@ class DrawingPainter extends CustomPainter {
     double scaleY = size.height / image.height.toDouble();
     double scale = scaleX < scaleY ? scaleX : scaleY;
     return scale;
+  }
+
+  Size getCanvasSize(){
+    return painterCanvasSize;
   }
 
 }
