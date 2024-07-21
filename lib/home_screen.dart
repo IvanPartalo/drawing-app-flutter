@@ -44,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int zoomLevel = 1;
   bool zoomingIn = true;
   var zoomingCoords = [0.0, 0.0, 0.0, 0.0];
+  var eraseToggled = false;
   final picker = ImagePicker();
   Matrix4 transformationMatrix = Matrix4.identity();
 
@@ -294,9 +295,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 PopUpButton(thickness: selectedThickness, onThicknessChanged: _updateThickness,),
                 PopUpColor(selectedColor: selectedColor, onColorSelected: _updateColor,),
                 IconButton(
+                  icon: Icon(
+                    Icons.clear,
+                    color: eraseToggled ? Color.fromARGB(255, 255, 0, 0) : Color.fromARGB(255, 200, 200, 200),
+                  ),
                   onPressed: (){
+                    setState(() {
+                      eraseToggled = !eraseToggled;
+                    });
                   },
-                  icon: const Icon(Icons.format_color_fill),
                 ),
                 IconButton(
                     onPressed: () {
@@ -316,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPanStart: (details){
                         setState(() {
                           currentLine = Line(
-                              color: selectedColor,
+                              color: eraseToggled ? Color.fromARGB(255, 255, 255, 255) : selectedColor,
                               thickness: selectedThickness,
                               points: [_transformOffset(details.localPosition)]
                           );
