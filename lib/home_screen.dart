@@ -15,6 +15,7 @@ import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import 'package:random_string_generator/random_string_generator.dart';
 import 'package:toastification/toastification.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 typedef ColorCallback = void Function(Color color);
 typedef ThicknessCallback = void Function(double thickness);
@@ -33,14 +34,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Line? currentLine;
   List<Line> currentLines = [];
   List<Line> undoLines = [];
-  Color selectedColor = Colors.red;
+  Color selectedColor = Color.fromARGB(255, 255, 0, 0);
   double selectedThickness = 1.0;
   ui.Image? _image;
   ui.Image? placeHolderImage;
   bool backgroundChosen = false;
   bool imageLoaded = false;
   bool isPortrait = true;
+  int zoomLevel = 1;
+  bool zoomingIn = true;
+  var zoomingCoords = [0.0, 0.0, 0.0, 0.0];
   final picker = ImagePicker();
+  Matrix4 transformationMatrix = Matrix4.identity();
 
   @override
   void initState() {
@@ -48,6 +53,57 @@ class _HomeScreenState extends State<HomeScreen> {
     loadInitImage();
   }
 
+  //Probati sa nekom boljom strukturom podataka za cuvanje koordinata umesto obicnog niza...
+  saveZoomingCoord(double x, double y){
+    if(zoomLevel == 1){
+      zoomingCoords[0] = x;
+      zoomingCoords[1] = y;
+    }
+    else{
+      zoomingCoords[2] = x;
+      zoomingCoords[3] = y;
+    }
+  }
+
+  void _handleDoubleTap(TapDownDetails details) {
+    setState(() {
+      final position = details.localPosition;
+      final Matrix4 inverseMatrix = Matrix4.copy(transformationMatrix)..invert();
+      final Vector4 tapInCanvas = inverseMatrix.transform(Vector4(position.dx, position.dy, 0, 1));
+      double x = tapInCanvas.x;
+      double y = tapInCanvas.y;
+      double scale;
+      if(zoomingIn){
+        scale = 1.5;
+        saveZoomingCoord(x, y);
+        zoomLevel++;
+      }
+      else{
+        scale = 1/1.5;
+        if(zoomLevel == 3){
+          x = zoomingCoords[2];
+          y = zoomingCoords[3];
+        }
+        else{
+          x = zoomingCoords[0];
+          y = zoomingCoords[1];
+        }
+        zoomLevel--;
+      }
+      if(zoomLevel == 3){
+        zoomingIn = false;
+      }
+      if(zoomLevel == 1){
+        zoomingIn = true;
+      }
+      final Matrix4 zoomMatrix = Matrix4.identity()
+        ..translate(x, y)
+        ..scale(scale)
+        ..translate(-x, -y);
+
+      transformationMatrix = transformationMatrix.multiplied(zoomMatrix);
+    });
+  }
   loadInitImage() async{
     placeHolderImage = await loadPlaceholderImage('assets/logo.png');
     setState(() {});
@@ -159,15 +215,15 @@ class _HomeScreenState extends State<HomeScreen> {
       Canvas canvas = Canvas(pictureRecorder);
       DrawingPainter painter;
       if(_image != null){
-        painter = DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded);
+        painter = DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix);
       }
       else{
-        painter = DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded);
+        painter = DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix);
       }
       Size? size = isPortrait ? const Size(360, 661.3) : const Size(731.3, 260);
       //moram da obojim pozadinu u belo rucno :(
       Paint paint = Paint();
-      paint.color = Colors.white;
+      paint.color = Color.fromARGB(255, 255, 255, 255);
       canvas.scale(scaleFactor);
       canvas.drawRect(Rect.fromLTWH(0, 0, size!.width, size.height), paint);
       painter.paint(canvas, size);
@@ -192,6 +248,13 @@ class _HomeScreenState extends State<HomeScreen> {
       print("Error while saving image: $e");
     }
   }
+
+  Offset _transformOffset(Offset offset) {
+    final Matrix4 inverseMatrix = Matrix4.copy(transformationMatrix)..invert();
+    final Vector4 transformedVector = inverseMatrix.transform(Vector4(offset.dx, offset.dy, 0, 1));
+    return Offset(transformedVector.x, transformedVector.y);
+  }
+
   @override
   Widget build(BuildContext context) {
     if(placeHolderImage == null){
@@ -211,13 +274,13 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 IconButton(
-                  onPressed: () {
-                    if(undoLines.length < 21) {
-                      undoLines.add(currentLines.last);
-                      currentLines.removeLast();
-                    }
-                  },
-                  icon: const Icon(Icons.undo)
+                    onPressed: () {
+                      if(undoLines.length < 21) {
+                        undoLines.add(currentLines.last);
+                        currentLines.removeLast();
+                      }
+                    },
+                    icon: const Icon(Icons.undo)
                 ),
                 IconButton(
                     onPressed: () {
@@ -230,53 +293,54 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 PopUpButton(thickness: selectedThickness, onThicknessChanged: _updateThickness,),
                 PopUpColor(selectedColor: selectedColor, onColorSelected: _updateColor,),
-                SizedBox(
-                  height: 40,
-                  //icon link: https://www.flaticon.com/free-icon/eraser_9515002?term=erase&page=1&position=10&origin=tag&related_id=9515002
-                  child: Image.asset('lib/icons/eraser.png'),
+                IconButton(
+                  onPressed: (){
+                  },
+                  icon: const Icon(Icons.format_color_fill),
                 ),
                 IconButton(
                     onPressed: () {
                       showOptions();
-
                     },
                     icon: const Icon(Icons.upload_sharp)
                 ),
                 PopUpMore(onDeleteAll: _deleteAll, onSetLandscape: _setLandscapeMode, onSetPortrait: _setPortraitMode,
-                onSaveImage: _saveAsImage,),
+                  onSaveImage: _saveAsImage,),
               ],
             ),
             Row(
               children: <Widget>[
                 Expanded(
                   child: GestureDetector(
+                    onDoubleTapDown: _handleDoubleTap,
                     onPanStart: (details){
-                      setState(() {
-                        currentLine = Line(
-                            color: selectedColor,
-                            thickness: selectedThickness,
-                            points: [details.localPosition]
-                        );
-                        currentLines.add(currentLine!);
-                        undoLines.clear();
-                      });
+                        setState(() {
+                          currentLine = Line(
+                              color: selectedColor,
+                              thickness: selectedThickness,
+                              points: [_transformOffset(details.localPosition)]
+                          );
+                          currentLines.add(currentLine!);
+                          undoLines.clear();
+                        });
                     },
                     onPanUpdate: (details){
-                      setState(() {
-                        if(currentLine == null){
-                          return;
-                        }
-                        currentLine?.points.add(details.localPosition);
-                        currentLines.last = currentLine!;
-                      });
+                        setState(() {
+                          if (currentLine == null) {
+                            return;
+                          }
+                          currentLine?.points.add(_transformOffset(details.localPosition));
+                          currentLines.last = currentLine!;
+                        });
                     },
                     onPanEnd: (_){
-                      currentLine = null;
+                        currentLine = null;
                     },
                     child: CustomPaint(
                       painter: _image != null
-                          ? DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded)
-                          : DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded),
+                          ? DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix)
+                          : DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix),
+
                       child: SizedBox(
                         width: MediaQuery.of(context).size.width,
                         height: MediaQuery.of(context).size.height - 100,
@@ -293,6 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 }
 
+//IZDVOJITI KLASU U ZASEBAN FAJL!
 class DrawingPainter extends CustomPainter {
   late List<Line> linesToDraw;
   late File image;
@@ -300,7 +365,9 @@ class DrawingPainter extends CustomPainter {
   bool backgroundChosen = false;
   bool imageLoaded = false;
   late Size painterCanvasSize;
-  DrawingPainter(List<Line> lines, ui.Image i, this.backgroundChosen, this.imageLoaded){
+  final Matrix4 transformationMatrix;
+
+  DrawingPainter(List<Line> lines, ui.Image i, this.backgroundChosen, this.imageLoaded, this.transformationMatrix){
     if(lines == null){
       linesToDraw = [];
     }else {
@@ -308,22 +375,16 @@ class DrawingPainter extends CustomPainter {
     }
     backgroundImage = i;
   }
-  DrawingPainter somePainter(List<Line> lines, backgroundChosen, imageLoaded){
-    if(lines == null){
-      linesToDraw = [];
-    }else {
-      linesToDraw = lines;
-    }
-    return this;
-  }
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.transform(transformationMatrix.storage);
     final paint = Paint();
     painterCanvasSize = size;
     //deo za bojenje pozadine moze biti problem ako stalno iterativno crta pa da usporava
     Path mainBackground = Path();
     mainBackground.addRect(Rect.fromLTRB(0, 0, size.width, size.height));
-    paint.color = Colors.white;
+    paint.color = Color.fromARGB(255, 255, 255, 255);
     canvas.drawPath(mainBackground, paint);
     if(backgroundChosen && imageLoaded){
       double scale = getScaleFactor(backgroundImage, size);
@@ -344,10 +405,11 @@ class DrawingPainter extends CustomPainter {
         canvas.drawLine(currentPoint, nextPoint, paint);
       }
     }
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+  bool shouldRepaint(covariant DrawingPainter oldDelegate) {
     //mozda bih mogao promeniti kada se ponovo crta kako bih optimizovao aplikaciju
     return true;
   }
