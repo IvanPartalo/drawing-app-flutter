@@ -8,8 +8,9 @@ class MoreMenu extends StatelessWidget{
   final SetPortraitCallback onSetPortrait;
   final SaveImageCallback onSaveImage;
   final UploadImageCallback onUploadImage;
+  final SetBackgroundCallback onBackroundChange;
   const MoreMenu({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait,
-  required this.onSaveImage, required this.onUploadImage});
+  required this.onSaveImage, required this.onUploadImage, required this.onBackroundChange});
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -96,6 +97,14 @@ class MoreMenu extends StatelessWidget{
           },
           label: Text("Save drawing"),
 
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.format_color_fill_outlined),
+          onPressed: () {
+            onBackroundChange();
+          },
+          label: Text("Fill back"),
+          style: ElevatedButton.styleFrom(minimumSize: Size(145, 35)),
         ),
         ElevatedButton.icon(
         icon: const Icon(Icons.delete),

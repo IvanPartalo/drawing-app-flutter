@@ -10,15 +10,19 @@ class PopUpMore extends StatelessWidget{
   final SetPortraitCallback onSetPortrait;
   final SaveImageCallback onSaveImage;
   final UploadImageCallback onUploadImage;
+  final SetBackgroundCallback onBackgroundChange;
+  final bool isPortrait;
   const PopUpMore({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait,
-  required this.onSaveImage, required this.onUploadImage});
+  required this.onSaveImage, required this.onUploadImage, required this.isPortrait, required this.onBackgroundChange});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
         child: IconButton(
             onPressed: () {
-              showPopover(context: context, bodyBuilder: (context) => MoreMenu(
+              showPopover(context: context,
+                direction: isPortrait ? PopoverDirection.bottom : PopoverDirection.top,
+                bodyBuilder: (context) => MoreMenu(
                 onDeleteAll: (){
                   onDeleteAll();
                   Navigator.pop(context);
@@ -38,9 +42,13 @@ class PopUpMore extends StatelessWidget{
                 onUploadImage: (){
                   onUploadImage();
                 },
+                onBackroundChange: (){
+                  onBackgroundChange();
+                  Navigator.pop(context);
+                },
               ),
                 width: 150,
-                height: 250,);
+                height: 310,);
             },
             icon: const Icon(Icons.more_vert)
         ),

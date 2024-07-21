@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:painter_app/components/display_text.dart';
+import 'package:painter_app/components/drawing_painter.dart';
 import 'package:painter_app/components/line.dart';
 import 'package:painter_app/menu/pop_up_button.dart';
 import 'package:painter_app/menu/pop_up_color.dart';
@@ -25,6 +26,7 @@ typedef SetLandscapeCallback = void Function();
 typedef SetPortraitCallback = void Function();
 typedef SaveImageCallback = void Function();
 typedef UploadImageCallback = void Function();
+typedef SetBackgroundCallback = void Function();
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,10 +38,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Line? currentLine;
   List<Line> currentLines = [];
   List<Line> undoLines = [];
+  List<DisplayText> undoText = [];
   Color selectedColor = Color.fromARGB(255, 255, 0, 0);
   double selectedThickness = 1.0;
   ui.Image? _image;
   ui.Image? placeHolderImage;
+  Color backgroundColor = Color.fromARGB(255, 255, 255, 255);
   bool backgroundChosen = false;
   bool imageLoaded = false;
   bool isPortrait = true;
@@ -217,6 +221,11 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() { isPortrait = true; });
     _deleteAll();
   }
+  void _setBackgroundColor(){
+    setState(() {
+      backgroundColor = selectedColor;
+    });
+  }
   void _saveAsImage() async{
     try {
       double scaleFactor = 1.5;
@@ -224,15 +233,15 @@ class _HomeScreenState extends State<HomeScreen> {
       Canvas canvas = Canvas(pictureRecorder);
       DrawingPainter painter;
       if(_image != null){
-        painter = DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix, texts);
+        painter = DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor);
       }
       else{
-        painter = DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix, texts);
+        painter = DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor);
       }
       Size? size = isPortrait ? const Size(360, 661.3) : const Size(731.3, 260);
       //moram da obojim pozadinu u belo rucno :(
       Paint paint = Paint();
-      paint.color = Color.fromARGB(255, 255, 255, 255);
+      paint.color = backgroundColor;
       canvas.scale(scaleFactor);
       canvas.drawRect(Rect.fromLTWH(0, 0, size!.width, size.height), paint);
       painter.paint(canvas, size);
@@ -286,10 +295,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 IconButton(
                     onPressed: () {
                       setState(() {
-                        if(undoLines.length < 21) {
-                          undoLines.add(currentLines.last);
-                          currentLines.removeLast();
+                        if(isTyping){
+                          if(texts.isNotEmpty && undoText.length < 21){
+                            undoText.add(texts.last);
+                            texts.removeLast();
+                          }
+                        }else{
+                          if(currentLines.isNotEmpty && undoLines.length < 21) {
+                            undoLines.add(currentLines.last);
+                            currentLines.removeLast();
+                          }
                         }
+
                       });
                     },
                     icon: const Icon(Icons.undo)
@@ -297,9 +314,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 IconButton(
                     onPressed: () {
                       setState(() {
-                        if(undoLines.isNotEmpty) {
-                          currentLines.add(undoLines.last);
-                          undoLines.removeLast();
+                        if(isTyping){
+                          if(undoText.isNotEmpty){
+                            texts.add(undoText.last);
+                            undoText.removeLast();
+                          }
+                        }else{
+                          if(undoLines.isNotEmpty) {
+                            currentLines.add(undoLines.last);
+                            undoLines.removeLast();
+                          }
                         }
                       });
                     },
@@ -330,7 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 PopUpMore(onDeleteAll: _deleteAll, onSetLandscape: _setLandscapeMode, onSetPortrait: _setPortraitMode,
-                  onSaveImage: _saveAsImage, onUploadImage: showOptions,),
+                  onSaveImage: _saveAsImage, onUploadImage: showOptions, onBackgroundChange: _setBackgroundColor, isPortrait: isPortrait,),
               ],
             ),
             Row(
@@ -358,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   onPanUpdate: (details){
                       setState(() {
-                        if (currentLine == null) {
+                        if (currentLine == null || details.localPosition.dy < 0) {
                           return;
                         }
                         currentLine?.points.add(_transformOffset(details.localPosition));
@@ -377,8 +401,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: CustomPaint(
                         size: Size.infinite,
                         painter: _image != null
-                            ? DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix, texts)
-                            : DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix, texts),
+                            ? DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor)
+                            : DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor),
 
                       ),
                     ),
@@ -415,79 +439,4 @@ class _HomeScreenState extends State<HomeScreen> {
 
 }
 
-//IZDVOJITI KLASU U ZASEBAN FAJL!
-class DrawingPainter extends CustomPainter {
-  late List<Line> linesToDraw;
-  final List<DisplayText> texts;
-  late File image;
-  late ui.Image backgroundImage;
-  bool backgroundChosen = false;
-  bool imageLoaded = false;
-  late Size painterCanvasSize;
-  final Matrix4 transformationMatrix;
 
-  DrawingPainter(List<Line> lines, ui.Image i, this.backgroundChosen, this.imageLoaded, this.transformationMatrix, this.texts){
-    if(lines == null){
-      linesToDraw = [];
-    }else {
-      linesToDraw = lines;
-    }
-    backgroundImage = i;
-  }
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.save();
-    canvas.transform(transformationMatrix.storage);
-    final paint = Paint();
-    painterCanvasSize = size;
-    //deo za bojenje pozadine moze biti problem ako stalno iterativno crta pa da usporava
-    Path mainBackground = Path();
-    mainBackground.addRect(Rect.fromLTRB(0, 0, size.width, size.height));
-    paint.color = Color.fromARGB(255, 255, 255, 255);
-    canvas.drawPath(mainBackground, paint);
-    if(backgroundChosen && imageLoaded){
-      double scale = getScaleFactor(backgroundImage, size);
-      double dx = (size.width - backgroundImage.width.toDouble() * scale ) / 2;
-      double dy = (size.height - backgroundImage.height.toDouble() * scale ) / 2;
-      canvas.save();
-      canvas.translate(dx, dy);
-      canvas.scale(scale, scale);
-      canvas.drawImage(backgroundImage, Offset.zero, paint);
-      canvas.restore();
-    }
-    for(var line in linesToDraw){
-      paint.color = line.color;
-      paint.strokeWidth = line.thickness;
-      for(var i = 0; i < line.points.length - 1; i++){
-        final currentPoint = line.points[i];
-        final nextPoint = line.points[i+1];
-        canvas.drawLine(currentPoint, nextPoint, paint);
-      }
-    }
-    for (var textInfo in texts){
-      final textSpan = TextSpan(text: textInfo.text, style: TextStyle(color: textInfo.textColor, fontSize: textInfo.fontSize));
-      final textPainter = TextPainter(text: textSpan, textDirection: TextDirection.ltr);
-      textPainter.layout();
-      textPainter.paint(canvas, textInfo.position);
-    }
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant DrawingPainter oldDelegate) {
-    //mozda bih mogao promeniti kada se ponovo crta kako bih optimizovao aplikaciju
-    return true;
-  }
-
-  double getScaleFactor(ui.Image image, Size size){
-    double scaleX = size.width / image.width.toDouble();
-    double scaleY = size.height / image.height.toDouble();
-    double scale = scaleX < scaleY ? scaleX : scaleY;
-    return scale;
-  }
-
-  Size getCanvasSize(){
-    return painterCanvasSize;
-  }
-
-}
