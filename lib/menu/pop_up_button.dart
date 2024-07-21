@@ -19,7 +19,8 @@ class PopUpButton extends StatelessWidget{
       width: 220,
       height: 90),
       child: SizedBox(
-        height: 40,
+        height: 30,
+        width: 30,
         // icon link: https://www.flaticon.com/free-icon/stroke_5598084?term=stroke&page=1&position=38&origin=search&related_id=5598084
         child: Image.asset('lib/icons/stroke.png'),
       ),

@@ -7,8 +7,9 @@ class MoreMenu extends StatelessWidget{
   final SetLandscapeCallback onSetLandscape;
   final SetPortraitCallback onSetPortrait;
   final SaveImageCallback onSaveImage;
+  final UploadImageCallback onUploadImage;
   const MoreMenu({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait,
-  required this.onSaveImage});
+  required this.onSaveImage, required this.onUploadImage});
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -79,6 +80,14 @@ class MoreMenu extends StatelessWidget{
             }
           },
           label: Text("Landscape"),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.upload_sharp),
+          onPressed: () {
+            onUploadImage();
+          },
+          label: Text("Upload image"),
+
         ),
         ElevatedButton.icon(
           icon: const Icon(Icons.save_alt),

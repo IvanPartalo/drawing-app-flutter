@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:painter_app/components/display_text.dart';
 import 'package:painter_app/components/line.dart';
 import 'package:painter_app/menu/pop_up_button.dart';
 import 'package:painter_app/menu/pop_up_color.dart';
@@ -23,6 +24,7 @@ typedef DeleteAllCallback = void Function();
 typedef SetLandscapeCallback = void Function();
 typedef SetPortraitCallback = void Function();
 typedef SaveImageCallback = void Function();
+typedef UploadImageCallback = void Function();
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,8 +47,13 @@ class _HomeScreenState extends State<HomeScreen> {
   bool zoomingIn = true;
   var zoomingCoords = [0.0, 0.0, 0.0, 0.0];
   var eraseToggled = false;
+  TapDownDetails? textPosition;
+  bool isTyping = false;
   final picker = ImagePicker();
   Matrix4 transformationMatrix = Matrix4.identity();
+  List<DisplayText> texts = [];
+  TextEditingController _controller = TextEditingController();
+  FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -190,6 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       currentLines = [];
       undoLines = [];
+      texts = [];
       backgroundChosen = false;
       imageLoaded = false;
     });
@@ -216,10 +224,10 @@ class _HomeScreenState extends State<HomeScreen> {
       Canvas canvas = Canvas(pictureRecorder);
       DrawingPainter painter;
       if(_image != null){
-        painter = DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix);
+        painter = DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix, texts);
       }
       else{
-        painter = DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix);
+        painter = DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix, texts);
       }
       Size? size = isPortrait ? const Size(360, 661.3) : const Size(731.3, 260);
       //moram da obojim pozadinu u belo rucno :(
@@ -262,6 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     return Scaffold(
+        resizeToAvoidBottomInset: false,
         body: Column(
           children: <Widget>[
             Row(
@@ -276,19 +285,23 @@ class _HomeScreenState extends State<HomeScreen> {
               children: <Widget>[
                 IconButton(
                     onPressed: () {
-                      if(undoLines.length < 21) {
-                        undoLines.add(currentLines.last);
-                        currentLines.removeLast();
-                      }
+                      setState(() {
+                        if(undoLines.length < 21) {
+                          undoLines.add(currentLines.last);
+                          currentLines.removeLast();
+                        }
+                      });
                     },
                     icon: const Icon(Icons.undo)
                 ),
                 IconButton(
                     onPressed: () {
-                      if(undoLines.isNotEmpty) {
-                        currentLines.add(undoLines.last);
-                        undoLines.removeLast();
-                      }
+                      setState(() {
+                        if(undoLines.isNotEmpty) {
+                          currentLines.add(undoLines.last);
+                          undoLines.removeLast();
+                        }
+                      });
                     },
                     icon: const Icon(Icons.redo)
                 ),
@@ -306,54 +319,92 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 IconButton(
-                    onPressed: () {
-                      showOptions();
-                    },
-                    icon: const Icon(Icons.upload_sharp)
+                  icon: Icon(
+                    Icons.text_format,
+                    color: isTyping ? Color.fromARGB(255, 0, 0, 0) : Color.fromARGB(255, 200, 200, 200),
+                  ),
+                  onPressed: (){
+                    setState(() {
+                      isTyping = !isTyping;
+                    });
+                  },
                 ),
                 PopUpMore(onDeleteAll: _deleteAll, onSetLandscape: _setLandscapeMode, onSetPortrait: _setPortraitMode,
-                  onSaveImage: _saveAsImage,),
+                  onSaveImage: _saveAsImage, onUploadImage: showOptions,),
               ],
             ),
             Row(
               children: <Widget>[
-                Expanded(
-                  child: GestureDetector(
-                    onDoubleTapDown: _handleDoubleTap,
-                    onPanStart: (details){
-                        setState(() {
-                          currentLine = Line(
-                              color: eraseToggled ? Color.fromARGB(255, 255, 255, 255) : selectedColor,
-                              thickness: selectedThickness,
-                              points: [_transformOffset(details.localPosition)]
-                          );
-                          currentLines.add(currentLine!);
-                          undoLines.clear();
-                        });
-                    },
-                    onPanUpdate: (details){
-                        setState(() {
-                          if (currentLine == null) {
-                            return;
-                          }
-                          currentLine?.points.add(_transformOffset(details.localPosition));
-                          currentLines.last = currentLine!;
-                        });
-                    },
-                    onPanEnd: (_){
-                        currentLine = null;
-                    },
-                    child: CustomPaint(
-                      painter: _image != null
-                          ? DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix)
-                          : DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix),
+                GestureDetector(
+                  onDoubleTapDown: _handleDoubleTap,
+                  onTapDown: (details){
+                    setState(() {
+                      if(isTyping) {
+                        textPosition = details;
+                        _focusNode.requestFocus();
+                      }
+                    });
+                  },
+                  onPanStart: (details){
+                      setState(() {
+                        currentLine = Line(
+                            color: eraseToggled ? Color.fromARGB(255, 255, 255, 255) : selectedColor,
+                            thickness: selectedThickness,
+                            points: [_transformOffset(details.localPosition)]
+                        );
+                        currentLines.add(currentLine!);
+                        undoLines.clear();
+                      });
+                  },
+                  onPanUpdate: (details){
+                      setState(() {
+                        if (currentLine == null) {
+                          return;
+                        }
+                        currentLine?.points.add(_transformOffset(details.localPosition));
+                        currentLines.last = currentLine!;
+                      });
+                  },
+                  onPanEnd: (_){
+                      currentLine = null;
+                  },
+                  child: Stack(
+                  children: [
+                  SingleChildScrollView(
+                    child: Container(
+                      height: MediaQuery.of(context).size.height - 100,
+                      width: MediaQuery.of(context).size.width,
+                      child: CustomPaint(
+                        size: Size.infinite,
+                        painter: _image != null
+                            ? DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix, texts)
+                            : DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix, texts),
 
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width,
-                        height: MediaQuery.of(context).size.height - 100,
                       ),
                     ),
                   ),
+                if(textPosition != null && isTyping)
+                Positioned(
+                  left: textPosition!.localPosition.dx,
+                  top: textPosition!.localPosition.dy,
+                  child: Container(
+                    width: 200,
+                    child: TextField(
+                      focusNode: _focusNode,
+                      controller: _controller,
+                      autofocus: true,
+                      onSubmitted: (text) {
+                        setState(() {
+                          texts.add(DisplayText(text, textPosition!.localPosition, selectedColor, selectedThickness+12));
+                          _controller.clear();
+                          _focusNode.unfocus();
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                ],
+                ),
                 ),
               ],
             ),
@@ -367,6 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
 //IZDVOJITI KLASU U ZASEBAN FAJL!
 class DrawingPainter extends CustomPainter {
   late List<Line> linesToDraw;
+  final List<DisplayText> texts;
   late File image;
   late ui.Image backgroundImage;
   bool backgroundChosen = false;
@@ -374,7 +426,7 @@ class DrawingPainter extends CustomPainter {
   late Size painterCanvasSize;
   final Matrix4 transformationMatrix;
 
-  DrawingPainter(List<Line> lines, ui.Image i, this.backgroundChosen, this.imageLoaded, this.transformationMatrix){
+  DrawingPainter(List<Line> lines, ui.Image i, this.backgroundChosen, this.imageLoaded, this.transformationMatrix, this.texts){
     if(lines == null){
       linesToDraw = [];
     }else {
@@ -411,6 +463,12 @@ class DrawingPainter extends CustomPainter {
         final nextPoint = line.points[i+1];
         canvas.drawLine(currentPoint, nextPoint, paint);
       }
+    }
+    for (var textInfo in texts){
+      final textSpan = TextSpan(text: textInfo.text, style: TextStyle(color: textInfo.textColor, fontSize: textInfo.fontSize));
+      final textPainter = TextPainter(text: textSpan, textDirection: TextDirection.ltr);
+      textPainter.layout();
+      textPainter.paint(canvas, textInfo.position);
     }
     canvas.restore();
   }
