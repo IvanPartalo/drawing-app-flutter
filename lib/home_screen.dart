@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:painter_app/background_image_filter.dart';
 import 'package:painter_app/components/display_text.dart';
 import 'package:painter_app/components/drawing_painter.dart';
 import 'package:painter_app/components/line.dart';
@@ -27,11 +28,16 @@ typedef SetPortraitCallback = void Function();
 typedef SaveImageCallback = void Function();
 typedef UploadImageCallback = void Function();
 typedef SetBackgroundCallback = void Function();
+typedef SetBackgroundFilterCallback = void Function();
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ui.Image? image;
+  final bool backgroundChosen;
+  //image loaded mozda ne mora da se salje nego samo u initState-u bih mogao to da vidim kad treba true kad false
+  final bool imageLoaded;
+  const HomeScreen({super.key, required this.image, required this.backgroundChosen, required this.imageLoaded});
   @override
-  State<StatefulWidget> createState() => _HomeScreenState();
+  State<StatefulWidget> createState() => _HomeScreenState(image, backgroundChosen, imageLoaded);
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -58,6 +64,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<DisplayText> texts = [];
   TextEditingController _controller = TextEditingController();
   FocusNode _focusNode = FocusNode();
+
+  _HomeScreenState(this._image, this.backgroundChosen, this.imageLoaded);
 
   @override
   void initState() {
@@ -226,6 +234,13 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor = selectedColor;
     });
   }
+  void _setBackgroundFilter(){
+    if(backgroundChosen) {
+      Navigator.push(context,
+        MaterialPageRoute(builder: (context) => ImageFilter(image: _image!)),
+      );
+    }
+  }
   void _saveAsImage() async{
     try {
       double scaleFactor = 1.5;
@@ -306,7 +321,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             currentLines.removeLast();
                           }
                         }
-
                       });
                     },
                     icon: const Icon(Icons.undo)
@@ -354,7 +368,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 PopUpMore(onDeleteAll: _deleteAll, onSetLandscape: _setLandscapeMode, onSetPortrait: _setPortraitMode,
-                  onSaveImage: _saveAsImage, onUploadImage: showOptions, onBackgroundChange: _setBackgroundColor, isPortrait: isPortrait,),
+                  onSaveImage: _saveAsImage, onUploadImage: showOptions, onBackgroundChange: _setBackgroundColor, isPortrait: isPortrait,
+                  onBackgroundFilter: _setBackgroundFilter,),
               ],
             ),
             Row(
@@ -372,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPanStart: (details){
                       setState(() {
                         currentLine = Line(
-                            color: eraseToggled ? Color.fromARGB(255, 255, 255, 255) : selectedColor,
+                            color: eraseToggled ? backgroundColor : selectedColor,
                             thickness: selectedThickness,
                             points: [_transformOffset(details.localPosition)]
                         );

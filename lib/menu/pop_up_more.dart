@@ -11,9 +11,11 @@ class PopUpMore extends StatelessWidget{
   final SaveImageCallback onSaveImage;
   final UploadImageCallback onUploadImage;
   final SetBackgroundCallback onBackgroundChange;
+  final SetBackgroundFilterCallback onBackgroundFilter;
   final bool isPortrait;
   const PopUpMore({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait,
-  required this.onSaveImage, required this.onUploadImage, required this.isPortrait, required this.onBackgroundChange});
+  required this.onSaveImage, required this.onUploadImage, required this.isPortrait, required this.onBackgroundChange,
+  required this.onBackgroundFilter});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +23,7 @@ class PopUpMore extends StatelessWidget{
         child: IconButton(
             onPressed: () {
               showPopover(context: context,
-                direction: isPortrait ? PopoverDirection.bottom : PopoverDirection.top,
+                direction: isPortrait ? PopoverDirection.bottom : PopoverDirection.left,
                 bodyBuilder: (context) => MoreMenu(
                 onDeleteAll: (){
                   onDeleteAll();
@@ -46,9 +48,12 @@ class PopUpMore extends StatelessWidget{
                   onBackgroundChange();
                   Navigator.pop(context);
                 },
+                onBackgroundFilter: (){
+                  onBackgroundFilter();
+                },
               ),
-                width: 150,
-                height: 310,);
+                width: 190,
+                height: 340,);
             },
             icon: const Icon(Icons.more_vert)
         ),

@@ -18,6 +18,6 @@ class Home extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HomeScreen();
+    return HomeScreen(image: null, backgroundChosen: false, imageLoaded: false,);
   }
 }

@@ -9,8 +9,9 @@ class MoreMenu extends StatelessWidget{
   final SaveImageCallback onSaveImage;
   final UploadImageCallback onUploadImage;
   final SetBackgroundCallback onBackroundChange;
+  final SetBackgroundFilterCallback onBackgroundFilter;
   const MoreMenu({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait,
-  required this.onSaveImage, required this.onUploadImage, required this.onBackroundChange});
+  required this.onSaveImage, required this.onUploadImage, required this.onBackroundChange, required this.onBackgroundFilter});
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -46,7 +47,7 @@ class MoreMenu extends StatelessWidget{
               );
             }
           },
-          style: ElevatedButton.styleFrom(minimumSize: Size(145, 35)),
+          style: ElevatedButton.styleFrom(minimumSize: Size(185, 35)),
           label: Text("Portrait"),
         ),
         ElevatedButton.icon(
@@ -80,31 +81,42 @@ class MoreMenu extends StatelessWidget{
             );
             }
           },
+          style: ElevatedButton.styleFrom(minimumSize: Size(185, 35)),
           label: Text("Landscape"),
-        ),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.upload_sharp),
-          onPressed: () {
-            onUploadImage();
-          },
-          label: Text("Upload image"),
-
-        ),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.save_alt),
-          onPressed: () {
-            onSaveImage();
-          },
-          label: Text("Save drawing"),
-
         ),
         ElevatedButton.icon(
           icon: const Icon(Icons.format_color_fill_outlined),
           onPressed: () {
             onBackroundChange();
           },
-          label: Text("Fill back"),
-          style: ElevatedButton.styleFrom(minimumSize: Size(145, 35)),
+          label: Text("Fill background"),
+          style: ElevatedButton.styleFrom(minimumSize: Size(185, 35)),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.filter_rounded),
+          onPressed: () {
+            Navigator.pop(context);
+            onBackgroundFilter();
+          },
+          label: Text("Background filter"),
+          style: ElevatedButton.styleFrom(minimumSize: Size(185, 35)),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.upload_sharp),
+          onPressed: () {
+            onUploadImage();
+          },
+          style: ElevatedButton.styleFrom(minimumSize: Size(185, 35)),
+          label: Text("Upload image"),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.save_alt),
+          onPressed: () {
+            onSaveImage();
+          },
+          style: ElevatedButton.styleFrom(minimumSize: Size(185, 35)),
+          label: Text("Save drawing"),
+
         ),
         ElevatedButton.icon(
         icon: const Icon(Icons.delete),
@@ -136,6 +148,7 @@ class MoreMenu extends StatelessWidget{
             },
           );
         },
+          style: ElevatedButton.styleFrom(minimumSize: Size(185, 35)),
         label: Text("Delete drawing"),
         ),
       ],
