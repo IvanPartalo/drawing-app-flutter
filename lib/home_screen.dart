@@ -10,6 +10,7 @@ import 'package:painter_app/background_image_filter.dart';
 import 'package:painter_app/components/display_text.dart';
 import 'package:painter_app/components/drawing_painter.dart';
 import 'package:painter_app/components/line.dart';
+import 'package:painter_app/components/rectangle.dart';
 import 'package:painter_app/menu/pop_up_button.dart';
 import 'package:painter_app/menu/pop_up_color.dart';
 import 'package:painter_app/menu/pop_up_more.dart';
@@ -29,6 +30,8 @@ typedef SaveImageCallback = void Function();
 typedef UploadImageCallback = void Function();
 typedef SetBackgroundCallback = void Function();
 typedef SetBackgroundFilterCallback = void Function();
+typedef DrawRectangleCallback = void Function();
+typedef DrawOvalCallback = void Function();
 
 class HomeScreen extends StatefulWidget {
   final ui.Image? image;
@@ -45,6 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Line> currentLines = [];
   List<Line> undoLines = [];
   List<DisplayText> undoText = [];
+  List<Rectangle> rectangles = [];
+  List<Rectangle> ovals = [];
   Color selectedColor = Color.fromARGB(255, 255, 0, 0);
   double selectedThickness = 1.0;
   ui.Image? _image;
@@ -53,6 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool backgroundChosen = false;
   bool imageLoaded = false;
   bool isPortrait = true;
+  bool drawingOval = false;
+  bool drawingRectangle = false;
   int zoomLevel = 1;
   bool zoomingIn = true;
   var zoomingCoords = [0.0, 0.0, 0.0, 0.0];
@@ -212,6 +219,8 @@ class _HomeScreenState extends State<HomeScreen> {
       texts = [];
       backgroundChosen = false;
       imageLoaded = false;
+      rectangles = [];
+      ovals = [];
     });
   }
   void _setLandscapeMode() {
@@ -248,10 +257,10 @@ class _HomeScreenState extends State<HomeScreen> {
       Canvas canvas = Canvas(pictureRecorder);
       DrawingPainter painter;
       if(_image != null){
-        painter = DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor);
+        painter = DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor, rectangles, ovals);
       }
       else{
-        painter = DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor);
+        painter = DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor, rectangles, ovals);
       }
       Size? size = isPortrait ? const Size(360, 661.3) : const Size(731.3, 260);
       //moram da obojim pozadinu u belo rucno :(
@@ -282,6 +291,24 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _drawOvalSelected(){
+    drawingRectangle = false;
+    drawingOval = !drawingOval;
+  }
+
+  void _drawRectangleSelected(){
+    drawingOval = false;
+    drawingRectangle = !drawingRectangle;
+  }
+
+  void _updateRectangle(Offset endPoint){
+    rectangles.last.endPoint = endPoint;
+  }
+
+  void _updateOval(Offset endPoint){
+    ovals.last.endPoint = endPoint;
+  }
+
   Offset _transformOffset(Offset offset) {
     final Matrix4 inverseMatrix = Matrix4.copy(transformationMatrix)..invert();
     final Vector4 transformedVector = inverseMatrix.transform(Vector4(offset.dx, offset.dy, 0, 1));
@@ -295,135 +322,75 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return Scaffold(
         resizeToAvoidBottomInset: false,
-        body: Column(
+        body: Stack(
           children: <Widget>[
-            Row(
-                children: <Widget>[
-                  Container(
-                    padding: EdgeInsets.all(20.0),
-                  )
-                ]
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                IconButton(
-                    onPressed: () {
-                      setState(() {
-                        if(isTyping){
-                          if(texts.isNotEmpty && undoText.length < 21){
-                            undoText.add(texts.last);
-                            texts.removeLast();
-                          }
-                        }else{
-                          if(currentLines.isNotEmpty && undoLines.length < 21) {
-                            undoLines.add(currentLines.last);
-                            currentLines.removeLast();
-                          }
-                        }
-                      });
-                    },
-                    icon: const Icon(Icons.undo)
-                ),
-                IconButton(
-                    onPressed: () {
-                      setState(() {
-                        if(isTyping){
-                          if(undoText.isNotEmpty){
-                            texts.add(undoText.last);
-                            undoText.removeLast();
-                          }
-                        }else{
-                          if(undoLines.isNotEmpty) {
-                            currentLines.add(undoLines.last);
-                            undoLines.removeLast();
-                          }
-                        }
-                      });
-                    },
-                    icon: const Icon(Icons.redo)
-                ),
-                PopUpButton(thickness: selectedThickness, onThicknessChanged: _updateThickness,),
-                PopUpColor(selectedColor: selectedColor, onColorSelected: _updateColor,),
-                IconButton(
-                  icon: Icon(
-                    Icons.clear,
-                    color: eraseToggled ? Color.fromARGB(255, 255, 0, 0) : Color.fromARGB(255, 200, 200, 200),
-                  ),
-                  onPressed: (){
+            Positioned.fill(
+              child: GestureDetector(
+                onDoubleTapDown: _handleDoubleTap,
+                onTapDown: (details){
+                  setState(() {
+                    if(isTyping) {
+                      textPosition = details;
+                      _focusNode.requestFocus();
+                    }
+                  });
+                },
+                onPanStart: (details){
+                  if(drawingRectangle){
+                    Rectangle rect = Rectangle(details.localPosition, details.localPosition, selectedColor, selectedThickness);
+                    rectangles.add(rect);
+                  }
+                  else if(drawingOval){
+                    Rectangle rect = Rectangle(details.localPosition, details.localPosition, selectedColor, selectedThickness);
+                    ovals.add(rect);
+                  }
+                  else {
                     setState(() {
-                      eraseToggled = !eraseToggled;
+                      currentLine = Line(
+                          color: eraseToggled ? backgroundColor : selectedColor,
+                          thickness: selectedThickness,
+                          points: [_transformOffset(details.localPosition)]
+                      );
+                      currentLines.add(currentLine!);
+                      undoLines.clear();
                     });
-                  },
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.text_format,
-                    color: isTyping ? Color.fromARGB(255, 0, 0, 0) : Color.fromARGB(255, 200, 200, 200),
-                  ),
-                  onPressed: (){
+                  }
+                },
+                onPanUpdate: (details){
+                  if(drawingRectangle){
+                    _updateRectangle(details.localPosition);
+                  }
+                  else if(drawingOval){
+                    _updateOval(details.localPosition);
+                  }
+                  else {
                     setState(() {
-                      isTyping = !isTyping;
-                    });
-                  },
-                ),
-                PopUpMore(onDeleteAll: _deleteAll, onSetLandscape: _setLandscapeMode, onSetPortrait: _setPortraitMode,
-                  onSaveImage: _saveAsImage, onUploadImage: showOptions, onBackgroundChange: _setBackgroundColor, isPortrait: isPortrait,
-                  onBackgroundFilter: _setBackgroundFilter,),
-              ],
-            ),
-            Row(
-              children: <Widget>[
-                GestureDetector(
-                  onDoubleTapDown: _handleDoubleTap,
-                  onTapDown: (details){
-                    setState(() {
-                      if(isTyping) {
-                        textPosition = details;
-                        _focusNode.requestFocus();
+                      if (currentLine == null || details.localPosition.dy < 0) {
+                        return;
                       }
+                      currentLine?.points.add(
+                          _transformOffset(details.localPosition));
+                      currentLines.last = currentLine!;
                     });
-                  },
-                  onPanStart: (details){
-                      setState(() {
-                        currentLine = Line(
-                            color: eraseToggled ? backgroundColor : selectedColor,
-                            thickness: selectedThickness,
-                            points: [_transformOffset(details.localPosition)]
-                        );
-                        currentLines.add(currentLine!);
-                        undoLines.clear();
-                      });
-                  },
-                  onPanUpdate: (details){
-                      setState(() {
-                        if (currentLine == null || details.localPosition.dy < 0) {
-                          return;
-                        }
-                        currentLine?.points.add(_transformOffset(details.localPosition));
-                        currentLines.last = currentLine!;
-                      });
-                  },
-                  onPanEnd: (_){
-                      currentLine = null;
-                  },
+                  }
+                },
+                onPanEnd: (_){
+                    currentLine = null;
+                },
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height - 100,
+                  width: MediaQuery.of(context).size.width,
                   child: Stack(
                   children: [
-                  SingleChildScrollView(
-                    child: Container(
-                      height: MediaQuery.of(context).size.height - 100,
-                      width: MediaQuery.of(context).size.width,
-                      child: CustomPaint(
-                        size: Size.infinite,
-                        painter: _image != null
-                            ? DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor)
-                            : DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor),
+                      CustomPaint(
+                      size: Size.infinite,
+                      painter: _image != null
+                          ? DrawingPainter(currentLines, _image!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor, rectangles, ovals)
+                          : DrawingPainter(currentLines, placeHolderImage!, backgroundChosen, imageLoaded, transformationMatrix, texts, backgroundColor, rectangles, ovals),
 
-                      ),
                     ),
-                  ),
-                if(textPosition != null && isTyping)
-                Positioned(
+                  if(textPosition != null && isTyping)
+                  Positioned(
                   left: textPosition!.localPosition.dx,
                   top: textPosition!.localPosition.dy,
                   child: Container(
@@ -441,11 +408,87 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                   ),
+                                  ),
+                                  ],
+                                  ),
                 ),
-                ],
+              ),
+            ),
+            Positioned(
+              top: 30,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 50,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    IconButton(
+                        onPressed: () {
+                          setState(() {
+                            if(isTyping){
+                              if(texts.isNotEmpty && undoText.length < 21){
+                                undoText.add(texts.last);
+                                texts.removeLast();
+                              }
+                            }else{
+                              if(currentLines.isNotEmpty && undoLines.length < 21) {
+                                undoLines.add(currentLines.last);
+                                currentLines.removeLast();
+                              }
+                            }
+                          });
+                        },
+                        icon: const Icon(Icons.undo)
+                    ),
+                    IconButton(
+                        onPressed: () {
+                          setState(() {
+                            if(isTyping){
+                              if(undoText.isNotEmpty){
+                                texts.add(undoText.last);
+                                undoText.removeLast();
+                              }
+                            }else{
+                              if(undoLines.isNotEmpty) {
+                                currentLines.add(undoLines.last);
+                                undoLines.removeLast();
+                              }
+                            }
+                          });
+                        },
+                        icon: const Icon(Icons.redo)
+                    ),
+                    PopUpButton(thickness: selectedThickness, onThicknessChanged: _updateThickness,),
+                    PopUpColor(selectedColor: selectedColor, onColorSelected: _updateColor,),
+                    IconButton(
+                      icon: Icon(
+                        Icons.clear,
+                        color: eraseToggled ? Color.fromARGB(255, 255, 0, 0) : Color.fromARGB(255, 200, 200, 200),
+                      ),
+                      onPressed: (){
+                        setState(() {
+                          eraseToggled = !eraseToggled;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.text_format,
+                        color: isTyping ? Color.fromARGB(255, 0, 0, 0) : Color.fromARGB(255, 200, 200, 200),
+                      ),
+                      onPressed: (){
+                        setState(() {
+                          isTyping = !isTyping;
+                        });
+                      },
+                    ),
+                    PopUpMore(onDeleteAll: _deleteAll, onSetLandscape: _setLandscapeMode, onSetPortrait: _setPortraitMode,
+                      onSaveImage: _saveAsImage, onUploadImage: showOptions, onBackgroundChange: _setBackgroundColor, isPortrait: isPortrait,
+                      onBackgroundFilter: _setBackgroundFilter, onDrawOvalSelected: _drawOvalSelected, onDrawRectangleSelected: _drawRectangleSelected,),
+                  ],
                 ),
-                ),
-              ],
+              ),
             ),
           ],
         )

@@ -10,8 +10,11 @@ class MoreMenu extends StatelessWidget{
   final UploadImageCallback onUploadImage;
   final SetBackgroundCallback onBackroundChange;
   final SetBackgroundFilterCallback onBackgroundFilter;
+  final DrawOvalCallback onDrawOvalSelected;
+  final DrawRectangleCallback onDrawRectangleSelected;
   const MoreMenu({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait,
-  required this.onSaveImage, required this.onUploadImage, required this.onBackroundChange, required this.onBackgroundFilter});
+  required this.onSaveImage, required this.onUploadImage, required this.onBackroundChange, required this.onBackgroundFilter,
+  required this.onDrawOvalSelected, required this.onDrawRectangleSelected});
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -99,6 +102,24 @@ class MoreMenu extends StatelessWidget{
             onBackgroundFilter();
           },
           label: Text("Background filter"),
+          style: ElevatedButton.styleFrom(minimumSize: Size(185, 35)),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.rectangle_outlined),
+          onPressed: () {
+            Navigator.pop(context);
+            onDrawRectangleSelected();
+          },
+          label: Text("Draw rectangle"),
+          style: ElevatedButton.styleFrom(minimumSize: Size(185, 35)),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.circle_outlined),
+          onPressed: () {
+            Navigator.pop(context);
+            onDrawOvalSelected();
+          },
+          label: Text("Draw oval"),
           style: ElevatedButton.styleFrom(minimumSize: Size(185, 35)),
         ),
         ElevatedButton.icon(

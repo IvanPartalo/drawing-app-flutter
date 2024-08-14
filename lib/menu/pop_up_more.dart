@@ -12,10 +12,12 @@ class PopUpMore extends StatelessWidget{
   final UploadImageCallback onUploadImage;
   final SetBackgroundCallback onBackgroundChange;
   final SetBackgroundFilterCallback onBackgroundFilter;
+  final DrawRectangleCallback onDrawRectangleSelected;
+  final DrawOvalCallback onDrawOvalSelected;
   final bool isPortrait;
   const PopUpMore({super.key, required this.onDeleteAll, required this.onSetLandscape, required this.onSetPortrait,
   required this.onSaveImage, required this.onUploadImage, required this.isPortrait, required this.onBackgroundChange,
-  required this.onBackgroundFilter});
+  required this.onBackgroundFilter, required this.onDrawRectangleSelected, required this.onDrawOvalSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -51,9 +53,15 @@ class PopUpMore extends StatelessWidget{
                 onBackgroundFilter: (){
                   onBackgroundFilter();
                 },
+                onDrawOvalSelected: (){
+                  onDrawOvalSelected();
+                },
+                onDrawRectangleSelected: (){
+                  onDrawRectangleSelected();
+                },
               ),
                 width: 190,
-                height: 340,);
+                height: 440,);
             },
             icon: const Icon(Icons.more_vert)
         ),

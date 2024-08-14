@@ -64,7 +64,6 @@ class _ColorMenuState extends State<ColorMenu>{
                       colorPickerWidth: 300,
                       pickerAreaHeightPercent: 0.7,
                       hexInputBar: false,
-
                     ),
                   ),
                   actions: <Widget>[
